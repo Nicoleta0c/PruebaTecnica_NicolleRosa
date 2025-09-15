@@ -10,7 +10,7 @@ using PruebaTecnica.Infrastructure.Data;
 namespace PruebaTecnica.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250911150246_InitialCreate")]
+    [Migration("20250915015355_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

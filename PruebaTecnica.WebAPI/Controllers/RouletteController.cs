@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PruebaTecnica.Application.DTOs;
 using PruebaTecnica.Application.Services;
-using PruebaTecnica.Domain.Entities;  
 using System;
 using System.Threading.Tasks;
 
@@ -12,15 +11,13 @@ namespace PruebaTecnica.WebApi.Controllers
     public class RouletteController : ControllerBase
     {
         private readonly BetService _betService;
-        private readonly UserService _userService;
 
-        public RouletteController(BetService betService, UserService userService)
+        public RouletteController(BetService betService)
         {
             _betService = betService;
-            _userService = userService;
         }
 
-        
+        // Generar resultado de la ruleta
         [HttpGet("spin")]
         public IActionResult Spin()
         {
@@ -28,24 +25,14 @@ namespace PruebaTecnica.WebApi.Controllers
             return Ok(new { Number = result.Number, Color = result.Color });
         }
 
-        // guardar saldo o crear
+        // Guardar saldo o crear usuario
         [HttpPost("save-balance")]
         public async Task<IActionResult> SaveBalance([FromBody] UserDto userDto)
         {
-            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(userDto.UserName))
-                return BadRequest("Invalid UserName.");
-
-            if (userDto.Balance < 0)
-                return BadRequest("Balance cannot be negative.");
-
             try
             {
-            
                 await _betService.AddBalanceAsync(userDto.UserName, userDto.Balance);
-                // Traer el usuario actualizado
-                var user = await _userService.LoadUserAsync(userDto.UserName);
-
-                return Ok(new { UserName = user.Name, Balance = user.Balance });
+                return Ok(new { UserName = userDto.UserName, Balance = userDto.Balance });
             }
             catch (Exception ex)
             {
@@ -53,16 +40,13 @@ namespace PruebaTecnica.WebApi.Controllers
             }
         }
 
-
-        [HttpPost("place-bet")]
-        public async Task<IActionResult> PlaceBet([FromBody] BetRequestDto betRequest)
+        // Previsualizar el resultado de la apuesta sin afectar el saldo
+        [HttpPost("preview-bet")]
+        public async Task<IActionResult> PreviewBet([FromBody] BetRequestDto betRequest)
         {
-            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(betRequest.UserName))
-                return BadRequest("Invalid request data.");
-
             try
             {
-                var result = await _betService.PlaceBetAsync(betRequest);
+                var result = await _betService.PreviewBetAsync(betRequest);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -76,6 +60,21 @@ namespace PruebaTecnica.WebApi.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal error: {ex.Message}");
+            }
+        }
+
+        // Guardar el resultado de la apuesta (si gana o pierde)
+        [HttpPost("commit-bet")]
+        public async Task<IActionResult> CommitBet([FromBody] BetResultDto betResult)
+        {
+            try
+            {
+                await _betService.CommitBetAsync(betResult.UserName, betResult.NewBalance);
+                return Ok(new { Message = "Bet committed successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error committing bet: {ex.Message}");
             }
         }
     }

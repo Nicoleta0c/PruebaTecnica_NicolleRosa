@@ -40,11 +40,9 @@ namespace PruebaTecnica.Application.Services
             await _userService.SaveUserAsync(user);
         }
 
-
-
-        public async Task<BetResultDto> PlaceBetAsync(BetRequestDto request)
+        public async Task<BetResultDto> PreviewBetAsync(BetRequestDto request)
         {
-            ValidateBet(request); 
+            ValidateBet(request);
 
             // Cargar usuario
             var user = await _userService.LoadUserAsync(request.UserName);
@@ -52,11 +50,10 @@ namespace PruebaTecnica.Application.Services
                 throw new InvalidOperationException("Insufficient balance.");
 
             // resultado de la ruleta 
-            //pudiera repetir logica pero para no romper DRY llamo al metodo que ya hice
+            // pudiera repetir logica pero para no romper DRY llamo al metodo que ya hice
             var rouletteResult = GenerateSpin();
 
-
-            //Crear apuesta
+            // Crear apuesta
             var bet = new Bet
             {
                 Amount = request.Amount,
@@ -66,7 +63,7 @@ namespace PruebaTecnica.Application.Services
                 Number = request.Number
             };
 
-            //Patron Strategies
+            // Patron Strategies
             decimal amountWon = bet.BetType switch
             {
                 BetType.Color => new ColorBetStrategy().CalculateWin(bet, rouletteResult),
@@ -75,21 +72,29 @@ namespace PruebaTecnica.Application.Services
                 _ => -bet.Amount
             };
 
-            //actualizar saldo
-            user.Balance += amountWon;
-            await _userService.SaveUserAsync(user);
+            // solo calculamos el nuevo saldo, no se guarda en DB
+            var previewBalance = user.Balance + amountWon;
 
             // resultado
             return new BetResultDto
             {
-                UserName = request.UserName, 
+                UserName = request.UserName,
                 RouletteNumber = rouletteResult.Number,
                 RouletteColor = rouletteResult.Color,
                 AmountWon = amountWon,
-                NewBalance = user.Balance
+                NewBalance = previewBalance
             };
+        }
 
 
+        //Guardar en la base de datos
+        public async Task CommitBetAsync(string userName, decimal newBalance)
+        {
+   
+            var user = await _userService.LoadUserAsync(userName);
+            user.Balance = newBalance;
+            // guardar en base de datos
+            await _userService.SaveUserAsync(user);
         }
 
         // Validaciones de la solicitud de apuesta
