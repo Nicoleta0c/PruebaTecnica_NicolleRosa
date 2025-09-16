@@ -2,7 +2,7 @@
 {
     public class BetRequestDto
     {
-        public string UserName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string BetType { get; set; } = string.Empty;  
         public string? Color { get; set; }                

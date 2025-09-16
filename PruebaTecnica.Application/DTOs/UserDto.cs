@@ -2,8 +2,7 @@
 {
     public class UserDto
     {
-        public string UserName { get; set; } = string.Empty;
-        public decimal Balance { get; set; }
-        //public decimal DeltaAmount { get; set; }
+        public required string Name { get; set; }
+        public decimal? Balance { get; set; }
     }
 }
